@@ -5,6 +5,7 @@ define(function (require) {
     var $ = require('jquery');
     var Tooltip = Private(require('ui/vislib/components/Tooltip'));
     var SimpleEmitter = require('ui/utils/SimpleEmitter');
+    var escapeAttr = require('ui/utils/escape_attr');
 
     /**
      * Handles event responses
@@ -230,7 +231,7 @@ define(function (require) {
     Dispatch.prototype.highlightLegend = function (element) {
       var label = this.getAttribute('data-label');
       if (!label) return;
-      $('[data-label]', element.parentNode).not('[data-label="' + label + '"]').css('opacity', 0.5);
+      $('[data-label]', element.parentNode).not('[data-label="' + escapeAttr(label) + '"]').css('opacity', 0.5);
     };
 
     /**

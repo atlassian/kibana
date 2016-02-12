@@ -1,6 +1,7 @@
 define(function (require) {
   var _ = require('lodash');
   var html = require('ui/visualize/visualize_legend.html');
+  var escapeAttr = require('ui/utils/escape_attr');
 
   var $ = require('jquery');
   var d3 = require('d3');
@@ -27,7 +28,7 @@ define(function (require) {
         });
 
         $scope.highlightSeries = function (label) {
-          $('[data-label]', $elem.siblings()).not('[data-label="' + label + '"]').css('opacity', 0.5);
+          $('[data-label]', element.parentNode).not('[data-label="' + escapeAttr(label) + '"]').css('opacity', 0.5);
         };
 
         $scope.unhighlightSeries = function () {
