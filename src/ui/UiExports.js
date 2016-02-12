@@ -61,7 +61,7 @@ class UiExports {
       case 'fieldFormats':
       case 'spyModes':
       case 'chromeNavControls':
-      case 'sledgehammers':
+      case 'hacks':
         return (plugin, spec) => {
           this.aliases[type] = _.union(this.aliases[type] || [], spec);
         };
