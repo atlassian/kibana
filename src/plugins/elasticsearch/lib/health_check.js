@@ -16,7 +16,7 @@ module.exports = function (plugin, server) {
   plugin.status.yellow('Waiting for Elasticsearch');
 
   function waitForPong() {
-    return client.ping({ requestTimeout: 1500 }).catch(function (err) {
+    return client.ping({ requestTimeout: 15000 }).catch(function (err) {
       if (!(err instanceof NoConnections)) throw err;
 
       plugin.status.red(format('Unable to connect to Elasticsearch at %s.', config.get('elasticsearch.url')));
@@ -27,7 +27,7 @@ module.exports = function (plugin, server) {
 
   function waitForShards() {
     return client.cluster.health({
-      timeout: '5s', // tells es to not sit around and wait forever
+      timeout: '15s', // tells es to not sit around and wait forever
       index: config.get('kibana.index'),
       ignore: [408]
     })
@@ -53,7 +53,7 @@ module.exports = function (plugin, server) {
 
   function check() {
     return waitForPong()
-    .then(_.partial(checkEsVersion, server))
+    // .then(_.partial(checkEsVersion, server))
     .then(waitForShards)
     .then(_.partial(migrateConfig, server))
     .catch(err => plugin.status.red(err));
