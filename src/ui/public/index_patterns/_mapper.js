@@ -5,6 +5,7 @@ define(function (require) {
 
     var IndexPatternMissingIndices = require('ui/errors').IndexPatternMissingIndices;
     var transformMappingIntoFields = Private(require('ui/index_patterns/_transform_mapping_into_fields'));
+    var calculateIndices = Private(require('ui/index_patterns/_calculate_indices'));
     var intervals = Private(require('ui/index_patterns/_intervals'));
     var patternToWildcard = Private(require('ui/index_patterns/_pattern_to_wildcard'));
 
@@ -46,7 +47,7 @@ define(function (require) {
           });
         }
 
-        var promise = Promise.resolve(id);
+        var promise = self.getIndicesForNonIntervalIndexPattern(indexPattern);
         if (indexPattern.intervalName) {
           promise = self.getIndicesForIndexPattern(indexPattern)
           .then(function (existing) {
@@ -73,24 +74,8 @@ define(function (require) {
       };
 
       self.getIndicesForIndexPattern = function (indexPattern) {
-        return es.indices.getAliases({
-          index: patternToWildcard(indexPattern.id)
-        })
-        .then(function (resp) {
-          // var all = Object.keys(resp).sort();
-          var all = _(resp)
-          .map(function (index, key) {
-            if (index.aliases) {
-              return [Object.keys(index.aliases), key];
-            } else {
-              return key;
-            }
-          })
-          .flattenDeep()
-          .sort()
-          .uniq(true)
-          .value();
-
+        return getAliases(patternToWildcard(indexPattern.id))
+        .then(function (all) {
           var matches = all.filter(function (existingIndex) {
             var parsed = moment(existingIndex, indexPattern.id);
             return existingIndex === parsed.format(indexPattern.id);
@@ -104,6 +89,18 @@ define(function (require) {
         .catch(handleMissingIndexPattern);
       };
 
+      self.getIndicesForNonIntervalIndexPattern = function (indexPattern) {
+        return calculateIndices(indexPattern.id, indexPattern.timeFieldName, moment().subtract(30, 'days'), moment(), false)
+        .then(function (indexList) {
+          // Concatenate the indices if any. Return the index pattern in case no indeces are found.
+          return _.map(indexList, 'index').join(',') || indexPattern.id;
+        })
+        .then(function (index) {
+          return getAliases(index)
+          .catch(handleMissingIndexPattern);
+        });
+      };
+
       /**
        * Clears mapping caches from elasticsearch and from local object
        * @param {dataSource} dataSource
@@ -115,6 +112,26 @@ define(function (require) {
         return Promise.resolve();
       };
     }
+
+    function getAliases(indexList) {
+      return es.indices.getAliases({
+        index: indexList
+      })
+      .then(function (resp) {
+        return _(resp)
+        .map(function (index, key) {
+          if (index.aliases) {
+            return [Object.keys(index.aliases), key];
+          } else {
+            return key;
+          }
+        })
+        .flattenDeep()
+        .sort()
+        .uniq(true)
+        .value();
+      });
+    };
 
     function handleMissingIndexPattern(err) {
       if (err.status >= 400) {
