@@ -25,7 +25,14 @@ export default function AbstractReqProvider(Private, Promise) {
 
     start() {
       if (this.started) {
-        throw new TypeError('Unable to start request because it has already started');
+        // This is a hack to workaround #6161 (in elastic/kibana repo)
+        //
+        // Normally we would:
+        //  throw new TypeError('...');
+        //
+        // We purposely don't throw an error to prevent users from being thrown
+        // into the Oops screen (for reasons described in the issue).
+        return;
       }
 
       this.started = true;
